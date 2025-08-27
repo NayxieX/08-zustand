@@ -1,58 +1,47 @@
 "use client";
 
-import css from "@/app/notes/filter/[...slug]/Notes.client.module.css";
-
-import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { useDebounce } from "use-debounce";
-
+import React, { useState, useEffect } from "react";
+import css from "./Notes.client.module.css";
 import NoteList from "@/components/NoteList/NoteList";
-import Pagination from "@/components/Pagination/Pagination";
-import Modal from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
 import SearchBox from "@/components/SearchBox/SearchBox";
-
-import { Tag } from "@/types/note";
+import Pagination from "@/components/Pagination/Pagination";
+import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
 import { fetchNotes } from "@/lib/api";
-import type { FetchNotesResponse } from "@/lib/api";
-
+import { Note } from "@/types/note";
+import Link from "next/link";
 import { toast } from "react-hot-toast";
+import type { Tag } from "@/types/note";
 
 interface NotesClientProps {
-  initialData: FetchNotesResponse;
-  selectedTag?: Tag | undefined;
+  initialData: {
+    totalPages: number;
+    notes: Note[];
+  };
+  initialTag: string | null;
 }
 
 export default function NotesClient({
   initialData,
-  selectedTag,
+  initialTag,
 }: NotesClientProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 1200);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [pageQuery, setCurrentPage] = useState<number>(1);
+  const [debouncedSearch] = useDebounce(searchQuery, 300);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchQuery, selectedTag]);
-
-  const { data, isLoading, isError, error } = useQuery<FetchNotesResponse>({
-    queryKey: ["notes", currentPage, debouncedSearchQuery, selectedTag],
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["notes", debouncedSearch, pageQuery, initialTag],
     queryFn: () =>
       fetchNotes({
-        page: currentPage,
-        search: debouncedSearchQuery,
-        ...(selectedTag ? { tag: selectedTag } : {}),
+        ...(debouncedSearch.trim() ? { search: debouncedSearch } : {}),
+        page: pageQuery,
+        ...(initialTag ? { tag: initialTag as Tag } : {}),
       }),
-    initialData:
-      currentPage === 1 && debouncedSearchQuery === "" && !selectedTag
-        ? initialData
-        : undefined,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    placeholderData: initialData,
   });
 
-  // React Hot-Toasts
+  const totalPages = data?.totalPages ?? 0;
+
   useEffect(() => {
     if (isLoading) {
       toast.loading("Loading notes...", { id: "notes-loading" });
@@ -82,36 +71,36 @@ export default function NotesClient({
     <div className={css.app}>
       <header className={css.toolbar}>
         <div className={css.left}>
-          <SearchBox value={searchQuery} onChange={setSearchQuery} />
-        </div>
-
-        <div className={css.center}>
-          {data?.totalPages && data.totalPages > 1 && (
-            <Pagination
-              pageCount={data.totalPages}
-              currentPage={currentPage - 1}
-              onPageChange={({ selected }) => setCurrentPage(selected + 1)}
-            />
-          )}
+          <SearchBox
+            value={searchQuery}
+            onChange={(value) => {
+              setSearchQuery(value);
+              setCurrentPage(1);
+            }}
+          />
         </div>
 
         <div className={css.right}>
-          <button className={css.button} onClick={() => setIsModalOpen(true)}>
-            Create note +
-          </button>
+          <Link href="/notes/action/create">
+            <button className={css.button} type="button">
+              Create note +
+            </button>
+          </Link>
         </div>
-
-        {isModalOpen && (
-          <Modal onClose={() => setIsModalOpen(false)}>
-            <NoteForm onCancel={() => setIsModalOpen(false)} />
-          </Modal>
-        )}
       </header>
 
-      {data && data.notes.length > 0 ? (
+      {data?.notes && data.notes.length > 0 ? (
         <NoteList notes={data.notes} />
       ) : (
-        <p>No notes found</p>
+        <p>No notes found.</p>
+      )}
+
+      {totalPages > 1 && (
+        <Pagination
+          pageCount={totalPages}
+          currentPage={pageQuery}
+          onPageChange={({ selected }) => setCurrentPage(selected)}
+        />
       )}
     </div>
   );

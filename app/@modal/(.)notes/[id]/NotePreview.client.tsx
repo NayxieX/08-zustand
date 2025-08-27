@@ -1,7 +1,7 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { getSingleNote } from "@/lib/api";
+import { fetchNoteById } from "@/lib/api";
 import Modal from "@/components/Modal/Modal";
 import { Note } from "@/types/note";
 import css from "./NotePreview.module.css";
@@ -20,7 +20,7 @@ export default function NotePreviewClient() {
     error,
   } = useQuery<Note, unknown>({
     queryKey: ["note", id],
-    queryFn: () => getSingleNote(id),
+    queryFn: () => fetchNoteById(id),
     refetchOnMount: false,
   });
 

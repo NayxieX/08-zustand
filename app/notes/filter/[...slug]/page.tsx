@@ -1,6 +1,39 @@
 import { fetchNotes } from "@/lib/api";
 import NotesClient from "@/app/notes/filter/[...slug]/Notes.client";
 import { tagOptions, Tag } from "@/types/note";
+import { Metadata } from "next";
+
+type Props = {
+  params: Promise<{ slug: string[] }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+
+  let tag = slug[0].toUpperCase() === "ALL" ? null : slug[0];
+
+  if (tag === null) {
+    tag = "ALL";
+  }
+
+  return {
+    title: `Note ${tag}`,
+    description: `Note tag is ${tag}`,
+    openGraph: {
+      title: `Note ${tag}`,
+      description: `Note tag is ${tag}`,
+      url: `https://notehub.com/notes/${tag}`,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: `Note ${tag}`,
+        },
+      ],
+    },
+  };
+}
 
 export default async function NotesPage({
   params,
@@ -20,5 +53,5 @@ export default async function NotesPage({
     ...(tag ? { tag } : {}),
   });
 
-  return <NotesClient initialData={data} selectedTag={tag} />;
+  return <NotesClient initialData={data} initialTag={tag ?? null} />;
 }
