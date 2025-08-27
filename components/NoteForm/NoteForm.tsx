@@ -6,7 +6,7 @@ import { createNote, CreateNoteDto } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useNoteDraft } from "@/lib/store/noteStore";
-import  type{ Tag } from "@/types/note";
+import type { Tag } from "@/types/note";
 
 export default function NoteForm() {
   const fieldId = useId();
@@ -38,8 +38,6 @@ export default function NoteForm() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-
-    
     const values: CreateNoteDto = {
       title: (formData.get("title") as string) || "",
       content: (formData.get("content") as string) || "",

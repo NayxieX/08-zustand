@@ -33,7 +33,6 @@ export const useNoteDraft = create<NoteDraftStore>()(
     {
       name: "note-draft",
       partialize: (state) => ({ draft: state.draft }),
-      skipHydration: true,
     }
   )
 );
